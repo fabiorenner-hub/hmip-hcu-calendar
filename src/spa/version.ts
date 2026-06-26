@@ -1,10 +1,15 @@
 // Keep in sync with package.json / Dockerfile / CHANGELOG.md / src/shared/version.ts.
-export const APP_VERSION = '0.1.2';
+export const APP_VERSION = '0.1.3';
 
 export const GITHUB_URL = 'https://github.com/fabiorenner-hub/hmip-hcu-calendar';
 
 /** Changelog shown in the Updates tab. Newest entry first. */
 export const CHANGELOG: { version: string; de: string; en: string }[] = [
+  {
+    version: '0.1.3',
+    de: 'Versions-Badge oben links neben dem Titel: verlinkt auf GitHub und zeigt eine Update-Benachrichtigung, wenn eine neuere Version verfügbar ist.',
+    en: 'Version badge top-left next to the title: links to GitHub and shows an update notification when a newer release is available.',
+  },
   {
     version: '0.1.2',
     de: 'Dashboard auf der HCU-Konfigseite aktivierbar; Port änderbar.',

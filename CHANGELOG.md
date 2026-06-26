@@ -4,6 +4,12 @@ All notable changes to this project are documented here. Versions follow the
 single source of truth in `package.json` and must stay in sync with the
 Dockerfile (ARG + LABEL), `src/shared/version.ts` and `src/spa/version.ts`.
 
+## 0.1.3
+
+- Version badge moved next to the title (top-left). It links to the GitHub
+  releases page and shows an update notification (dot + pill) when a newer
+  release is available. The check runs client-side; the HCU needs no internet.
+
 ## 0.1.2
 
 - Dashboard can be enabled/disabled and its port changed from the HCU plugin

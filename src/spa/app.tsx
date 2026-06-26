@@ -2,6 +2,7 @@ import type { JSX } from 'preact';
 import { signal } from '@preact/signals';
 import { langPref, setLangPref, t, type LangPref } from './i18n.js';
 import { APP_VERSION } from './version.js';
+import { GITHUB_RELEASES_URL, latestVersion, updateAvailable } from './update.js';
 import { snapshot } from './api.js';
 import { DashboardTab } from './tabs/dashboard.js';
 import { CalendarsTab } from './tabs/calendars.js';
@@ -77,7 +78,34 @@ export function App(): JSX.Element {
       <header class="app__header">
         <div class="brand">
           <img class="brand__mark" src="/icon.png" alt="" width="28" height="28" />
-          <span class="brand__name">HmIP Kalender</span>
+          <span class="brand__name">Kalender</span>
+          <a
+            class={`version-badge ${updateAvailable.value ? 'has-update' : ''}`}
+            href={GITHUB_RELEASES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={
+              updateAvailable.value
+                ? t(
+                    `Update verfügbar: v${latestVersion.value} — auf GitHub ansehen`,
+                    `Update available: v${latestVersion.value} — view on GitHub`,
+                  )
+                : t('Version — auf GitHub ansehen', 'Version — view on GitHub')
+            }
+          >
+            v{APP_VERSION}
+            {updateAvailable.value && <span class="version-badge__dot" aria-hidden="true" />}
+          </a>
+          {updateAvailable.value && (
+            <a
+              class="update-pill"
+              href={GITHUB_RELEASES_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              ⬆ {t('Update', 'Update')} v{latestVersion.value}
+            </a>
+          )}
         </div>
         <div class="app__header-right">
           {snap && (
@@ -85,9 +113,6 @@ export function App(): JSX.Element {
               {activeCount} {t('aktiv', 'active')}
             </span>
           )}
-          <button class="version-badge" type="button" onClick={() => (route.value = 'updates')}>
-            v{APP_VERSION}
-          </button>
           <div class="lang-switch">
             {(['AUTO', 'de', 'en'] as LangPref[]).map((p) => (
               <button
