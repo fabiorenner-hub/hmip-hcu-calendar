@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.log
+.tmp-assets/
+.kiro/
+public/app.js
+public/app.js.map
+*.tar.gz
+.DS_Store
+.vscode/
+authtoken.txt
+TOKEN
+data/

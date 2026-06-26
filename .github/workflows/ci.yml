@@ -1,0 +1,86 @@
+# CI for hmip-hcu-calendar.
+#
+# Steering note: NO RELEASE / PUBLISH STEP. This workflow runs typecheck, lint,
+# tests, builds dist/ + the SPA bundle, and builds the arm64 Docker image
+# locally (load only). It must NEVER push to a registry, NEVER cut a GitHub
+# release, and NEVER run `npm publish`. Releases are gated on explicit user
+# verification on a real HCU.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test-build:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck (server + SPA)
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build (server + SPA)
+        run: npm run build
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: calendar-dist
+          path: |
+            dist
+            public/app.js
+          retention-days: 7
+
+  docker-build:
+    name: Docker build arm64 (no push)
+    needs: lint-test-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (arm64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (load only, never push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm64
+          load: true
+          push: false
+          tags: hmip-hcu-calendar:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
