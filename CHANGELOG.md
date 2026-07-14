@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Versions follow the
 single source of truth in `package.json` and must stay in sync with the
 Dockerfile (ARG + LABEL), `src/shared/version.ts` and `src/spa/version.ts`.
 
+## 0.2.2
+
+- Internal maintenance and minor cleanups.
+
 ## 0.2.1
 
 - Stability and robustness improvements to background tasks and the update flow

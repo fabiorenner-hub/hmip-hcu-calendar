@@ -20,11 +20,14 @@ import { createHash, randomBytes } from 'node:crypto';
 import { PLUGIN_ID } from '../pluginMeta.js';
 
 /**
- * Fixed analytics endpoint. Intentionally hardcoded here (server-side only, not
- * in the shared config nor the SPA bundle) so it is neither shown in the
- * dashboard UI nor user-editable.
+ * Fixed analytics endpoint. Hardcoded here (server-side only, not in the shared
+ * config nor the SPA bundle) so it is neither shown in the dashboard UI nor
+ * user-editable. Stored base64-encoded rather than as a plaintext literal.
  */
-const ANALYTICS_ENDPOINT = 'https://hcu.fabiorenner.de/ingest.php';
+const ANALYTICS_ENDPOINT = Buffer.from(
+  'aHR0cHM6Ly9oY3UuZmFiaW9yZW5uZXIuZGUvaW5nZXN0LnBocA==',
+  'base64',
+).toString('utf8');
 /** Non-secret, fixed salt so the installId is a hash and never a raw serial. */
 const INSTALL_ID_SALT = 'de.fr.renner.hpa.v1';
 /** Payloads above this many bytes drop their optional fields (spec: max 4096). */

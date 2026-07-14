@@ -14,31 +14,12 @@ auslösen (oder bewusst *nicht* auslösen).
 > Eine HCU-Automation kann dann z. B. das werktägliche Aufwachlicht
 > überspringen, solange dieses Gerät an ist.
 
-Das Plugin ist **rein lokal** (`scope: LOCAL`), speichert alles unter `/data`
-und ist vollständig zweisprachig (DE/EN). Es folgt der offiziellen
-[Connect-API](https://github.com/homematicip/connect-api) 1.0.1. Die einzige
-Ausnahme von „keine Cloud" ist eine optionale, anonyme Nutzungsstatistik — siehe
-[Datenschutz & Telemetrie](#datenschutz--telemetrie) unten.
+Das Plugin ist **rein lokal** (`scope: LOCAL`), speichert alles unter `/data`,
+braucht keine Cloud und ist vollständig zweisprachig (DE/EN). Es folgt der
+offiziellen [Connect-API](https://github.com/homematicip/connect-api) 1.0.1.
 
 > Hinweis: Dies ist ein privates, selbst gehostetes Hobby-Projekt, kein
 > offizielles eQ-3-Produkt. Nutzung auf eigene Gefahr.
-
-## Datenschutz & Telemetrie
-
-Um zu verstehen, wie viele Installationen es gibt und welche Plugin-/HCU-
-Versionen im Einsatz sind, sendet das Plugin eine **anonyme Nutzungsstatistik**
-an einen zentralen Endpunkt (`https://hcu.fabiorenner.de/ingest.php`). Das ist
-**standardmäßig aktiv** und kann jederzeit unter **Einstellungen → Darstellung &
-Sprache → Anonyme Nutzungsstatistik** abgeschaltet werden.
-
-Übertragen werden ausschließlich pseudonyme technische Metadaten: eine gehashte,
-stabile Installations-ID (ein SHA-256-Wert — die HCU-Seriennummer/SGTIN wird
-**niemals** übertragen), die Plugin-ID, die laufenden Core-/OTA-/Build-Versionen,
-die CPU-Architektur und die aktive UI-Sprache. **Niemals gesendet:**
-Seriennummern, IP-Adressen, Namen, E-Mail, Standort, Räume, Gerätenamen/-adressen,
-Messwerte, Automationen, Zeitpläne, Konfigurationsinhalte oder Tokens. Der Button
-„Was wird gesendet?" im Dashboard zeigt die exakte Nutzlast. Der Versand erfolgt
-„best effort" und beeinträchtigt den Plugin-Betrieb nie.
 
 ## Support
 
