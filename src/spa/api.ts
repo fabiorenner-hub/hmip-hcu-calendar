@@ -92,8 +92,11 @@ export const api = {
       `/api/holidays?year=${year}&states=${states.join(',')}`,
     ),
   otaStatus: () => json<OtaStatus>('/api/ota/status'),
-  otaCheck: () => json<OtaStatus>('/api/ota/check', { method: 'POST' }),
-  otaInstall: () => json<{ status: OtaStatus; result: unknown }>('/api/ota/install', { method: 'POST' }),
+  // Send an explicit empty JSON body: the helper sets Content-Type:
+  // application/json, and Fastify rejects that with an empty body.
+  otaCheck: () => json<OtaStatus>('/api/ota/check', { method: 'POST', body: '{}' }),
+  otaInstall: () =>
+    json<{ status: OtaStatus; result: unknown }>('/api/ota/install', { method: 'POST', body: '{}' }),
   analyticsPreview: () => json<AnalyticsPreview>('/api/analytics/preview'),
 };
 

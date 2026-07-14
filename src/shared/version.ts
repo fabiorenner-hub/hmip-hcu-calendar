@@ -3,7 +3,7 @@
  * This constant MUST be kept in sync with package.json, the Dockerfile
  * (ARG + LABEL), CHANGELOG.md and the SPA version.ts (src/spa/version.ts).
  */
-export const APP_VERSION = '0.2.3';
+export const APP_VERSION = '0.2.4';
 
 /**
  * Build identifier, injected at runtime via env (CALENDAR_BUILD_ID) when

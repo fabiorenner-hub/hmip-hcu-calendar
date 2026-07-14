@@ -4,6 +4,13 @@ All notable changes to this project are documented here. Versions follow the
 single source of truth in `package.json` and must stay in sync with the
 Dockerfile (ARG + LABEL), `src/shared/version.ts` and `src/spa/version.ts`.
 
+## 0.2.4
+
+- Fixed the "Check now" and "Install" buttons in the Updates tab: their POST
+  requests carried no body, which the server rejected, so the buttons appeared
+  to do nothing. The server now also tolerates an empty JSON body on these
+  actions.
+
 ## 0.2.3
 
 - Renamed the dashboard title (top-left) to "HmIP Kalender".

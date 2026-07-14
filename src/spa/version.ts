@@ -1,10 +1,15 @@
 // Keep in sync with package.json / Dockerfile / CHANGELOG.md / src/shared/version.ts.
-export const APP_VERSION = '0.2.3';
+export const APP_VERSION = '0.2.4';
 
 export const GITHUB_URL = 'https://github.com/fabiorenner-hub/hmip-hcu-calendar';
 
 /** Changelog shown in the Updates tab. Newest entry first. */
 export const CHANGELOG: { version: string; de: string; en: string }[] = [
+  {
+    version: '0.2.4',
+    de: 'Fehler behoben: Die Buttons „Jetzt prüfen" und „Installieren" im Updates-Tab reagierten nicht.',
+    en: 'Fixed the "Check now" and "Install" buttons in the Updates tab, which did nothing.',
+  },
   {
     version: '0.2.3',
     de: 'Dashboard-Titel in „HmIP Kalender" umbenannt.',

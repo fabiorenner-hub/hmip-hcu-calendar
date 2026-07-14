@@ -39,6 +39,27 @@ function errorBody(code: string, message: string): { error: { code: string; mess
 export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
 
+  // Tolerate an empty body on application/json POSTs (e.g. the OTA
+  // check/install actions carry no payload). Without this, Fastify rejects an
+  // empty JSON body and the request fails before reaching the handler.
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (_req, body: string, done) => {
+      const text = typeof body === 'string' ? body.trim() : '';
+      if (text.length === 0) {
+        done(null, {});
+        return;
+      }
+      try {
+        done(null, JSON.parse(text));
+      } catch (err) {
+        (err as { statusCode?: number }).statusCode = 400;
+        done(err as Error, undefined);
+      }
+    },
+  );
+
   await app.register(fastifyStatic, { root: publicDir(), prefix: '/' });
 
   app.get('/api/state', async () => deps.orchestrator.getSnapshot());
