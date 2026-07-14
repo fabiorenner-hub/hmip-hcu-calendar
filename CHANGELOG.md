@@ -4,6 +4,18 @@ All notable changes to this project are documented here. Versions follow the
 single source of truth in `package.json` and must stay in sync with the
 Dockerfile (ARG + LABEL), `src/shared/version.ts` and `src/spa/version.ts`.
 
+## 0.2.0
+
+- Automatic over-the-air (OTA) updates with two channels (stable and
+  experimental). OTA is on by default on the stable channel, so stable releases
+  install automatically; the experimental channel is opt-in.
+- New install experience: a clear progress bar and step-by-step status while the
+  plugin downloads, verifies, restarts and comes back on the new version. The
+  browser reloads automatically once the new version is live, and the button is
+  locked during an install so a stray second click can no longer break the flow.
+- OTA payloads are verified (sha256 + core-version compatibility) before they
+  are activated; the image-baked bundle stays as a safe fallback.
+
 ## 0.1.3
 
 - Version badge moved next to the title (top-left). It links to the GitHub

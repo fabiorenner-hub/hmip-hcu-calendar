@@ -42,6 +42,24 @@ export interface HolidayPreview {
   states: string[];
 }
 
+export interface OtaStatus {
+  coreVersion: string;
+  otaVersion: string;
+  otaActive: boolean;
+  channel: 'stable' | 'experimental';
+  latest: string | null;
+  updateAvailable: boolean;
+  requiresCore: boolean;
+  mode: 'manual' | 'auto';
+  checkIntervalHours: number;
+  lastCheck: string | null;
+  lastResult: string | null;
+}
+
+export interface AnalyticsPreview {
+  payload: Record<string, unknown> | null;
+}
+
 async function json<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
@@ -73,6 +91,10 @@ export const api = {
     json<{ year: number; states: string[]; holidays: HolidayPreview[] }>(
       `/api/holidays?year=${year}&states=${states.join(',')}`,
     ),
+  otaStatus: () => json<OtaStatus>('/api/ota/status'),
+  otaCheck: () => json<OtaStatus>('/api/ota/check', { method: 'POST' }),
+  otaInstall: () => json<{ status: OtaStatus; result: unknown }>('/api/ota/install', { method: 'POST' }),
+  analyticsPreview: () => json<AnalyticsPreview>('/api/analytics/preview'),
 };
 
 /** Live snapshot, kept fresh via SSE with a polling fallback. */

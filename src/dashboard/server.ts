@@ -9,15 +9,24 @@ import { maskConfig } from '../shared/config.js';
 import { APP_VERSION, buildId } from '../shared/version.js';
 import type { Orchestrator } from '../plugin/orchestrator.js';
 import { PLUGIN_ID } from '../plugin/env.js';
+import type { OtaManager } from '../plugin/ota/manager.js';
+import type { CallHome } from '../plugin/analytics/callHome.js';
 
 export interface ServerDeps {
   orchestrator: Orchestrator;
   notifications: NotificationService;
   connect: ConnectClient | undefined;
   noConnect: boolean;
+  /** Optional OTA manager; when absent the OTA endpoints return 503. */
+  ota?: OtaManager | undefined;
+  /** Optional analytics call-home (for the transparency preview endpoint). */
+  callHome?: CallHome | undefined;
 }
 
 function publicDir(): string {
+  // When running an OTA payload the loader points this at active/public.
+  const fromEnv = process.env['CALENDAR_PUBLIC_DIR'];
+  if (fromEnv && fromEnv.trim()) return fromEnv;
   const here = dirname(fileURLToPath(import.meta.url));
   // dist/dashboard/server.js -> ../../public  (and src/dashboard -> ../../public)
   return join(here, '..', '..', 'public');
@@ -110,6 +119,36 @@ export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
     );
     list.sort((a, b) => a.date.localeCompare(b.date));
     return { year, states, holidays: list };
+  });
+
+  // OTA update endpoints. Return 503 when OTA is unavailable so the UI hides it.
+  app.get('/api/ota/status', async (_req, reply) => {
+    if (!deps.ota) {
+      reply.code(503);
+      return errorBody('OTA_UNAVAILABLE', 'OTA is not available');
+    }
+    return deps.ota.getStatus();
+  });
+  app.post('/api/ota/check', async (_req, reply) => {
+    if (!deps.ota) {
+      reply.code(503);
+      return errorBody('OTA_UNAVAILABLE', 'OTA is not available');
+    }
+    await deps.ota.check();
+    return deps.ota.getStatus();
+  });
+  app.post('/api/ota/install', async (_req, reply) => {
+    if (!deps.ota) {
+      reply.code(503);
+      return errorBody('OTA_UNAVAILABLE', 'OTA is not available');
+    }
+    return deps.ota.install();
+  });
+
+  // Analytics transparency: exactly the payload that would be sent (or null).
+  app.get('/api/analytics/preview', async () => {
+    if (!deps.callHome) return { payload: null };
+    return { payload: await deps.callHome.preview() };
   });
 
   // Server-Sent Events stream of live snapshots.

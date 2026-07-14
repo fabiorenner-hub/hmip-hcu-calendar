@@ -1,8 +1,60 @@
 import type { JSX } from 'preact';
+import { signal } from '@preact/signals';
 import { config, patchConfig } from '../store.js';
+import { api } from '../api.js';
 import { langPref, setLangPref, t, type LangPref } from '../i18n.js';
-import { Card, Empty, Field, Panel, Segment, Toggle } from '../components.js';
+import { Button, Card, Empty, Field, Hint, Panel, Segment, Toggle } from '../components.js';
 import { BUNDESLAENDER } from '../constants.js';
+
+const analyticsPreview = signal<string | null>(null);
+
+/** Opt-in, anonymous usage statistics with full transparency of what is sent. */
+function AnalyticsCard(): JSX.Element {
+  const cfg = config.value!;
+  const a = cfg.analytics;
+  return (
+    <Card title={t('Anonyme Nutzungsstatistik (Datenschutz)', 'Anonymous usage statistics (privacy)')}>
+      <Hint>
+        {t(
+          'Standardmäßig AN. Es werden nur pseudonyme technische Daten gesendet (anonyme Installations-ID, Plugin-/Core-/Build-Version, Architektur, Sprache) — keine personenbezogenen Daten, keine Seriennummern, keine Orte, Räume, Gerätenamen oder Messwerte. Du kannst dies hier jederzeit abschalten.',
+          'On by default. Only pseudonymous technical data is sent (anonymous install id, plugin/core/build version, architecture, language) — no personal data, no serial numbers, no locations, rooms, device names or measurements. You can switch this off here at any time.',
+        )}
+      </Hint>
+      <Toggle
+        checked={a.enabled}
+        onChange={(v) => void patchConfig({ analytics: { ...a, enabled: v } })}
+        label={t('Anonyme Nutzungsstatistik senden', 'Send anonymous usage statistics')}
+      />
+      <Field
+        label={t('Endpoint (HTTPS)', 'Endpoint (HTTPS)')}
+        hint={t('Selbst hostbar; leer = es wird nichts gesendet.', 'Self-hostable; empty = nothing is sent.')}
+      >
+        <input
+          type="url"
+          placeholder="https://…"
+          value={a.endpoint ?? ''}
+          onChange={(e) => {
+            const url = (e.target as HTMLInputElement).value.trim();
+            void patchConfig({ analytics: { ...a, endpoint: url } });
+          }}
+        />
+      </Field>
+      <Button
+        onClick={() => {
+          void api
+            .analyticsPreview()
+            .then((r) => (analyticsPreview.value = JSON.stringify(r.payload, null, 2)))
+            .catch(() => (analyticsPreview.value = '—'));
+        }}
+      >
+        {t('Was wird gesendet?', 'What is sent?')}
+      </Button>
+      {analyticsPreview.value && (
+        <pre class="code-preview">{analyticsPreview.value}</pre>
+      )}
+    </Card>
+  );
+}
 
 export function AppearanceTab(): JSX.Element {
   const cfg = config.value;
@@ -92,6 +144,8 @@ export function AppearanceTab(): JSX.Element {
               />
             </Field>
           </Card>
+
+          <AnalyticsCard />
 
           <Card title={t('Standard-Bundesländer', 'Default states')}>
             <p class="muted">

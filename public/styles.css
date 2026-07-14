@@ -734,3 +734,66 @@ input[type='number'] {
   background: linear-gradient(90deg, var(--color-accent), var(--color-accent-strong));
   border-radius: var(--radius-pill);
 }
+
+/* ---------- Code / JSON preview (analytics transparency) ---------- */
+.code-preview {
+  margin-top: var(--sp-3);
+  background: var(--color-bg-elev);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-muted);
+  overflow-x: auto;
+  white-space: pre;
+  max-height: 320px;
+}
+
+/* ---------- OTA install progress ---------- */
+.ota-progress {
+  margin-top: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.ota-progress__label {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+.progress {
+  height: 8px;
+  width: 100%;
+  background: var(--color-bg-elev);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.progress__bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-strong));
+  border-radius: var(--radius-pill);
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: var(--glow-accent);
+}
+/* During the restart window the exact progress is unknown → gentle shimmer. */
+.progress__bar--pulse {
+  background: linear-gradient(
+    90deg,
+    var(--color-accent) 0%,
+    var(--color-accent-strong) 50%,
+    var(--color-accent) 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-shimmer 1.2s ease-in-out infinite;
+}
+@keyframes progress-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

@@ -15,11 +15,29 @@ on those days.
 > that device is on.
 
 The plugin is **local only** (`scope: LOCAL`), stores everything under `/data`,
-needs no cloud, and is fully bilingual (DE/EN). It follows the official
+and is fully bilingual (DE/EN). It follows the official
 [Connect API](https://github.com/homematicip/connect-api) 1.0.1 specification.
+The one exception to "no cloud" is optional, anonymous usage statistics — see
+[Privacy & telemetry](#privacy--telemetry) below.
 
 > Heads-up: this is a personal, self-hosted hobby project, not an official
 > eQ-3 product. Use at your own risk.
+
+## Privacy & telemetry
+
+To understand how many installations exist and which plugin/HCU versions are in
+use, the plugin sends **anonymous usage statistics** to a central endpoint
+(`https://hcu.fabiorenner.de/ingest.php`). This is **on by default** and can be
+switched off any time under **Settings → Appearance & Language → Anonymous usage
+statistics**.
+
+Only pseudonymous technical metadata is sent: a hashed, stable install id (a
+SHA-256 value — your HCU serial/SGTIN is **never** transmitted), the plugin id,
+the running core/OTA/build versions, the CPU architecture and the active UI
+language. **Never sent:** serial numbers, IP addresses, names, e-mail,
+location, rooms, device names/addresses, measurements, automations, schedules,
+config contents or tokens. The dashboard's "What is sent?" button shows the
+exact payload. Delivery is best-effort and never affects plugin operation.
 
 ## Support
 

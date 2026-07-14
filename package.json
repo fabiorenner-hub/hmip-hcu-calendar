@@ -1,6 +1,6 @@
 {
   "name": "hmip-hcu-calendar",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Homematic IP HCU plugin that exposes calendar special days (German holidays, bridge days, school holidays, custom days) as virtual on/off devices.",
@@ -17,8 +17,11 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "node dist/plugin/index.js",
-    "build:image": "node scripts/build-image.mjs"
+    "start": "node dist/bootstrap/loader.js",
+    "build:image": "node scripts/build-image.mjs",
+    "build:ota": "node scripts/build-ota.mjs stable",
+    "build:ota:exp": "node scripts/build-ota.mjs experimental",
+    "publish:ota:exp": "pwsh -File scripts/publish-ota-experimental.ps1"
   },
   "dependencies": {
     "fastify": "^4.28.1",

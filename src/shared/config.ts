@@ -127,6 +127,34 @@ export const TelegramSchema = z.object({
 });
 export type TelegramConfig = z.infer<typeof TelegramSchema>;
 
+export const UpdatesConfigSchema = z
+  .object({
+    // OTA is ON by default on the stable channel (auto-installs stable releases).
+    mode: z.enum(['manual', 'auto']).default('auto'),
+    channel: z.enum(['stable', 'experimental']).default('stable'),
+    checkIntervalHours: z.number().int().min(1).max(168).default(6),
+  })
+  .default({});
+export type UpdatesConfig = z.infer<typeof UpdatesConfigSchema>;
+
+/** Central "HCU Plugin Analytics" endpoint used by default. */
+export const DEFAULT_ANALYTICS_ENDPOINT = 'https://hcu.fabiorenner.de/ingest.php';
+
+export const AnalyticsConfigSchema = z
+  .object({
+    // Anonymous usage statistics. ON by default, with a visible toggle in the
+    // dashboard so users can switch it off at any time. Only pseudonymous
+    // technical metadata is sent (see callHome.ts) — never PII.
+    enabled: z.boolean().default(true),
+    // Central analytics endpoint (self-hostable / overridable); empty → nothing is sent.
+    endpoint: z.union([z.literal(''), z.string().url()]).default(DEFAULT_ANALYTICS_ENDPOINT),
+    intervalHours: z.number().int().min(1).max(168).default(24),
+    // Optional simple spam hurdle sent as the X-HPA-Ping-Secret header.
+    pingSecret: z.string().optional(),
+  })
+  .default({});
+export type AnalyticsConfig = z.infer<typeof AnalyticsConfigSchema>;
+
 export const ConfigSchema = z.object({
   /** IANA timezone used to determine the local "today". */
   timezone: z.string().min(1).default('Europe/Berlin'),
@@ -150,6 +178,8 @@ export const ConfigSchema = z.object({
       dayEnd: z.boolean().default(false),
     })
     .default({ dayStart: true, dayEnd: false }),
+  updates: UpdatesConfigSchema,
+  analytics: AnalyticsConfigSchema,
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

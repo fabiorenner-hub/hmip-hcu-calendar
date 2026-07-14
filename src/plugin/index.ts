@@ -1,15 +1,16 @@
+import { pathToFileURL } from 'node:url';
 import { ConnectClient } from '../connect/client.js';
 import { DashboardController } from '../dashboard/controller.js';
 import { NotificationService } from '../notifications/service.js';
 import { ConfigStore } from '../persistence/store.js';
-import { buildId } from '../shared/version.js';
+import { APP_VERSION, buildId } from '../shared/version.js';
 import { msUntilNextMidnight } from './clock.js';
 import { PLUGIN_ID, readEnv } from './env.js';
 import { Orchestrator } from './orchestrator.js';
+import { OtaManager } from './ota/manager.js';
+import { CallHome } from './analytics/callHome.js';
 
 // Safety net: a stray rejection or exception must NEVER terminate the plugin.
-// On Node >= 15 an unhandled promise rejection exits the process by default,
-// which on the HCU surfaces as a plugin/setup crash. We log and keep running.
 process.on('unhandledRejection', (reason) => {
   console.error('[calendar] unhandledRejection:', reason);
 });
@@ -17,11 +18,17 @@ process.on('uncaughtException', (err) => {
   console.error('[calendar] uncaughtException:', err);
 });
 
-async function main(): Promise<void> {
+function markHealthy(): void {
+  (globalThis as { __otaMarkHealthy?: () => void }).__otaMarkHealthy?.();
+}
+
+export async function main(): Promise<void> {
   const env = readEnv();
+  const coreVersion = process.env['CALENDAR_VERSION'] ?? APP_VERSION;
+  const otaActive = process.env['CALENDAR_OTA_ACTIVE'] === '1';
   console.log(
-    `[calendar] start build=${buildId()} pluginId=${PLUGIN_ID} connectUrl=${env.connectUrl} ` +
-      `dataDir=${env.dataDir} noConnect=${env.noConnect} hasToken=${Boolean(env.authToken)}`,
+    `[calendar] start build=${buildId()} pluginId=${PLUGIN_ID} core=${coreVersion} ota=${otaActive} ` +
+      `connectUrl=${env.connectUrl} dataDir=${env.dataDir} noConnect=${env.noConnect} hasToken=${Boolean(env.authToken)}`,
   );
   const store = new ConfigStore(env.dataDir);
 
@@ -39,16 +46,12 @@ async function main(): Promise<void> {
       pluginId: PLUGIN_ID,
       authToken: env.authToken,
       onMessage: (msg) => {
-        // Never let a handler rejection become an unhandled rejection.
         orchestrator.handleMessage(msg).catch((err) => {
           console.error('[calendar] message handler error:', err);
         });
       },
       onStateChange: (state) => {
-        if (state === 'connected') {
-          // Announce readiness on (re)connect per spec.
-          orchestrator.sendPluginState();
-        }
+        if (state === 'connected') orchestrator.sendPluginState();
       },
     });
     orchestrator.attachClient(connect);
@@ -59,13 +62,43 @@ async function main(): Promise<void> {
     );
   }
 
-  // Dashboard lifecycle is driven by the persisted config (enabled + port),
-  // which the HCU plugin config page and the dashboard itself can change at
-  // runtime. Env vars only act as dev overrides. The dashboard is non-critical
-  // for the HCU integration (purely the Connect API WebSocket), so a bind
-  // failure never crashes the plugin.
+  // OTA update manager (channels stable/experimental) + opt-in analytics.
+  const ota = new OtaManager({
+    dataDir: env.dataDir,
+    coreVersion,
+    getMode: () => store.get().updates.mode,
+    getChannel: () => store.get().updates.channel,
+    getIntervalHours: () => store.get().updates.checkIntervalHours,
+    requestRestart: () => {
+      console.log('[calendar] restart requested (OTA install) — exiting for loader pickup');
+      setTimeout(() => process.exit(0), 100);
+    },
+    logger: (lvl, msg) => console.log(`[calendar] ota ${lvl}: ${msg}`),
+  });
+
+  const callHome = new CallHome({
+    dataDir: env.dataDir,
+    getConfig: () => {
+      const a = store.get().analytics;
+      return {
+        enabled: a.enabled,
+        ...(a.endpoint ? { endpoint: a.endpoint } : {}),
+        intervalHours: a.intervalHours,
+        ...(a.pingSecret ? { pingSecret: a.pingSecret } : {}),
+      };
+    },
+    buildInfo: () => ({
+      coreVersion,
+      otaVersion: process.env['CALENDAR_OTA_VERSION'] ?? coreVersion,
+      buildId: buildId(),
+      arch: process.arch,
+      lang: store.get().notificationLanguage,
+    }),
+    logger: (lvl, msg) => console.log(`[calendar] analytics ${lvl}: ${msg}`),
+  });
+
   const dashboard = new DashboardController(
-    { orchestrator, notifications, connect, noConnect: env.noConnect || !env.authToken },
+    { orchestrator, notifications, connect, noConnect: env.noConnect || !env.authToken, ota, callHome },
     env.noDashboard,
     env.dashboardPortOverride,
   );
@@ -76,9 +109,14 @@ async function main(): Promise<void> {
   const initial = store.get().dashboard;
   await dashboard.reconcile(initial.enabled, initial.port);
 
-  // Initial evaluation and a self-rescheduling timer at every local midnight.
   await orchestrator.recompute().catch((err) => console.error('[calendar] recompute failed:', err));
   scheduleMidnight();
+
+  // Start background loops after a successful boot, and mark the OTA payload
+  // healthy so the loader resets its crash-loop counter.
+  ota.start();
+  callHome.start();
+  markHealthy();
 
   function scheduleMidnight(): void {
     const tz = store.get().timezone;
@@ -93,13 +131,20 @@ async function main(): Promise<void> {
 
   const shutdown = (): void => {
     connect?.stop();
+    ota.stop();
+    callHome.stop();
     void dashboard.stop().finally(() => process.exit(0));
   };
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 }
 
-main().catch((err) => {
-  console.error('[calendar] fatal during startup:', err);
-  process.exit(1);
-});
+// Direct-run guard: run main() only when this file is the entry point (local
+// dev: `node dist/plugin/index.js`). In production the bootstrap loader imports
+// this module and calls main() itself, so importing must not auto-run.
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error('[calendar] fatal during startup:', err);
+    process.exit(1);
+  });
+}
