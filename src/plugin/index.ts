@@ -80,11 +80,11 @@ export async function main(): Promise<void> {
     dataDir: env.dataDir,
     getConfig: () => {
       const a = store.get().analytics;
+      const secret = process.env['CALENDAR_ANALYTICS_SECRET'];
       return {
         enabled: a.enabled,
-        ...(a.endpoint ? { endpoint: a.endpoint } : {}),
         intervalHours: a.intervalHours,
-        ...(a.pingSecret ? { pingSecret: a.pingSecret } : {}),
+        ...(secret ? { pingSecret: secret } : {}),
       };
     },
     buildInfo: () => ({

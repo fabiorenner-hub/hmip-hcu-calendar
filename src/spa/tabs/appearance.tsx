@@ -16,8 +16,8 @@ function AnalyticsCard(): JSX.Element {
     <Card title={t('Anonyme Nutzungsstatistik (Datenschutz)', 'Anonymous usage statistics (privacy)')}>
       <Hint>
         {t(
-          'Standardmäßig AN. Es werden nur pseudonyme technische Daten gesendet (anonyme Installations-ID, Plugin-/Core-/Build-Version, Architektur, Sprache) — keine personenbezogenen Daten, keine Seriennummern, keine Orte, Räume, Gerätenamen oder Messwerte. Du kannst dies hier jederzeit abschalten.',
-          'On by default. Only pseudonymous technical data is sent (anonymous install id, plugin/core/build version, architecture, language) — no personal data, no serial numbers, no locations, rooms, device names or measurements. You can switch this off here at any time.',
+          'Sendet ausschließlich pseudonyme technische Informationen wie Plugin-Version, HCU-Firmware, Architektur und Sprache. Es werden keine Geräte-, Raum-, Mess- oder Konfigurationsdaten übertragen. Standardmäßig AN — hier jederzeit abschaltbar.',
+          'Sends only pseudonymous technical information such as plugin version, HCU firmware, architecture and language. No device, room, measurement or configuration data is transmitted. On by default — can be switched off here any time.',
         )}
       </Hint>
       <Toggle
@@ -25,20 +25,6 @@ function AnalyticsCard(): JSX.Element {
         onChange={(v) => void patchConfig({ analytics: { ...a, enabled: v } })}
         label={t('Anonyme Nutzungsstatistik senden', 'Send anonymous usage statistics')}
       />
-      <Field
-        label={t('Endpoint (HTTPS)', 'Endpoint (HTTPS)')}
-        hint={t('Selbst hostbar; leer = es wird nichts gesendet.', 'Self-hostable; empty = nothing is sent.')}
-      >
-        <input
-          type="url"
-          placeholder="https://…"
-          value={a.endpoint ?? ''}
-          onChange={(e) => {
-            const url = (e.target as HTMLInputElement).value.trim();
-            void patchConfig({ analytics: { ...a, endpoint: url } });
-          }}
-        />
-      </Field>
       <Button
         onClick={() => {
           void api

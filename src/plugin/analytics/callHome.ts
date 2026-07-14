@@ -19,6 +19,12 @@ import * as path from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { PLUGIN_ID } from '../pluginMeta.js';
 
+/**
+ * Fixed analytics endpoint. Intentionally hardcoded here (server-side only, not
+ * in the shared config nor the SPA bundle) so it is neither shown in the
+ * dashboard UI nor user-editable.
+ */
+const ANALYTICS_ENDPOINT = 'https://hcu.fabiorenner.de/ingest.php';
 /** Non-secret, fixed salt so the installId is a hash and never a raw serial. */
 const INSTALL_ID_SALT = 'de.fr.renner.hpa.v1';
 /** Payloads above this many bytes drop their optional fields (spec: max 4096). */
@@ -48,8 +54,8 @@ export interface TelemetryPayload {
 export type AnalyticsPayload = TelemetryPayload;
 
 export interface CallHomeConfig {
+  /** The opt-out switch (default on). When false, nothing is ever sent. */
   enabled: boolean;
-  endpoint?: string;
   intervalHours: number;
   /** Optional simple spam hurdle sent as X-HPA-Ping-Secret (not real auth). */
   pingSecret?: string;
@@ -68,9 +74,10 @@ export interface CallHomeBuildInfo {
 interface TelemetryState {
   /** OTA/release version seen on the previous run — used to detect updates. */
   lastVersion?: string;
-  lastTelemetrySuccess?: string;
   lastTelemetryAttempt?: string;
+  lastTelemetrySuccess?: string;
   lastTelemetryEvent?: TelemetryEvent;
+  lastHeartbeatAt?: string;
 }
 
 export interface CallHomeDeps {
@@ -206,10 +213,15 @@ export class CallHome {
     };
   }
 
-  /** One transmission attempt. Returns true on HTTP 204 (or any 2xx). */
-  private async send(event: TelemetryEvent = 'heartbeat'): Promise<boolean> {
+  /**
+   * One transmission attempt. `ok` is true on HTTP 204 (or any 2xx). `retry`
+   * signals whether a later retry makes sense: server errors (HTTP 5xx) and
+   * network/timeout failures are retryable, but HTTP 4xx (e.g. 400 invalid
+   * payload) is NOT — per the spec, an invalid body should not be resent.
+   */
+  private async send(event: TelemetryEvent = 'heartbeat'): Promise<{ ok: boolean; retry: boolean }> {
     const cfg = this.deps.getConfig();
-    if (!cfg.enabled || !cfg.endpoint || !cfg.endpoint.startsWith('https://')) return false;
+    if (!cfg.enabled) return { ok: false, retry: false };
 
     await this.loadState();
     this.state.lastTelemetryAttempt = new Date(this.now()).toISOString();
@@ -223,32 +235,35 @@ export class CallHome {
       const body = JSON.stringify(await this.preview(event));
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (cfg.pingSecret) headers['X-HPA-Ping-Secret'] = cfg.pingSecret;
-      const res = await this.fetch(cfg.endpoint, {
+      const res = await this.fetch(ANALYTICS_ENDPOINT, {
         method: 'POST',
         headers,
         body,
         signal: controller.signal,
       });
-      const success = res.status === 204 || res.ok;
-      if (success) {
-        this.state.lastTelemetrySuccess = new Date(this.now()).toISOString();
+      const ok = res.status === 204 || res.ok;
+      if (ok) {
+        const nowIso = new Date(this.now()).toISOString();
+        this.state.lastTelemetrySuccess = nowIso;
+        if (event === 'heartbeat') this.state.lastHeartbeatAt = nowIso;
         void this.persistState();
       }
       this.deps.logger?.('info', `telemetry ${event} → ${res.status}`);
-      return success;
+      // Retry only on server errors; 4xx (invalid) must not be resent.
+      return { ok, retry: !ok && res.status >= 500 };
     } catch {
       // Fire-and-forget: swallow network/timeout errors, log locally only.
       this.deps.logger?.('warn', `telemetry ${event} failed (network/timeout)`);
-      return false;
+      return { ok: false, retry: true };
     } finally {
       clearTimeout(timer);
     }
   }
 
-  /** Send an event, retrying on failure with a slow backoff (no fast looping). */
+  /** Send an event, retrying only retryable failures with a slow backoff. */
   private dispatch(event: TelemetryEvent, attempt = 0): void {
-    void this.send(event).then((ok) => {
-      if (ok || attempt >= RETRY_DELAYS_MS.length) return;
+    void this.send(event).then(({ ok, retry }) => {
+      if (ok || !retry || attempt >= RETRY_DELAYS_MS.length) return;
       const delay = RETRY_DELAYS_MS[attempt];
       const timer = setTimeout(() => {
         this.retryTimers.delete(timer);
@@ -287,11 +302,12 @@ export class CallHome {
     this.heartbeatTimer.unref?.();
   }
 
-  /** Send a heartbeat only if enough time passed since the last success (dedup). */
+  /** Send a heartbeat only if enough time passed since the last one (dedup). */
   private async maybeHeartbeat(): Promise<void> {
     await this.loadState();
     const hours = Math.max(1, this.deps.getConfig().intervalHours);
-    const last = this.state.lastTelemetrySuccess ? Date.parse(this.state.lastTelemetrySuccess) : 0;
+    const lastIso = this.state.lastHeartbeatAt ?? this.state.lastTelemetrySuccess;
+    const last = lastIso ? Date.parse(lastIso) : 0;
     if (this.now() - last < hours * 3_600_000 * 0.9) return;
     this.dispatch('heartbeat');
   }

@@ -137,20 +137,14 @@ export const UpdatesConfigSchema = z
   .default({});
 export type UpdatesConfig = z.infer<typeof UpdatesConfigSchema>;
 
-/** Central "HCU Plugin Analytics" endpoint used by default. */
-export const DEFAULT_ANALYTICS_ENDPOINT = 'https://hcu.fabiorenner.de/ingest.php';
-
 export const AnalyticsConfigSchema = z
   .object({
-    // Anonymous usage statistics. ON by default, with a visible toggle in the
-    // dashboard so users can switch it off at any time. Only pseudonymous
-    // technical metadata is sent (see callHome.ts) — never PII.
+    // Anonymous usage statistics. ON by default (opt-out) via a toggle in the
+    // dashboard. Only pseudonymous technical metadata is sent (see callHome.ts)
+    // — never PII. The target endpoint is fixed server-side (not user-editable
+    // and not exposed here or via /api/config).
     enabled: z.boolean().default(true),
-    // Central analytics endpoint (self-hostable / overridable); empty → nothing is sent.
-    endpoint: z.union([z.literal(''), z.string().url()]).default(DEFAULT_ANALYTICS_ENDPOINT),
     intervalHours: z.number().int().min(1).max(168).default(24),
-    // Optional simple spam hurdle sent as the X-HPA-Ping-Secret header.
-    pingSecret: z.string().optional(),
   })
   .default({});
 export type AnalyticsConfig = z.infer<typeof AnalyticsConfigSchema>;
