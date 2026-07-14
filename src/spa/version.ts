@@ -1,10 +1,15 @@
 // Keep in sync with package.json / Dockerfile / CHANGELOG.md / src/shared/version.ts.
-export const APP_VERSION = '0.2.2';
+export const APP_VERSION = '0.2.3';
 
 export const GITHUB_URL = 'https://github.com/fabiorenner-hub/hmip-hcu-calendar';
 
 /** Changelog shown in the Updates tab. Newest entry first. */
 export const CHANGELOG: { version: string; de: string; en: string }[] = [
+  {
+    version: '0.2.3',
+    de: 'Dashboard-Titel in „HmIP Kalender" umbenannt.',
+    en: 'Renamed the dashboard title to "HmIP Kalender".',
+  },
   {
     version: '0.2.2',
     de: 'Interne Wartung und kleinere Aufräumarbeiten.',

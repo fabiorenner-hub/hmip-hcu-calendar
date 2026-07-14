@@ -78,7 +78,7 @@ export function App(): JSX.Element {
       <header class="app__header">
         <div class="brand">
           <img class="brand__mark" src="/icon.png" alt="" width="28" height="28" />
-          <span class="brand__name">Kalender</span>
+          <span class="brand__name">HmIP Kalender</span>
           <a
             class={`version-badge ${updateAvailable.value ? 'has-update' : ''}`}
             href={GITHUB_RELEASES_URL}
